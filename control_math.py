@@ -3,6 +3,7 @@ from sympy.core import symbols
 from sympy import simplify, cancel, Poly, fraction, solve
 import matplotlib.pyplot as plt
 from scipy.linalg import expm
+from scipy import integrate
 from itertools import chain, zip_longest
 
 
@@ -145,10 +146,7 @@ class StateSpaceModel(object):
 
         identity = np.identity(n_states)
         self.expM_zoh_x = expm(A * dt)
-        try:
-            self.expM_zoh_u = np.linalg.inv(A).dot(self.expM_zoh_x - identity).dot(B)
-        except:
-            self.expM_zoh_u = B * dt
+        self.expM_zoh_u = np.linalg.pinv(A).dot(self.expM_zoh_x - identity).dot(B)
         n_inputs = self.B.shape[1]
         M_linear = np.block(
             [
@@ -172,6 +170,47 @@ class StateSpaceModel(object):
         expM_step = expm(M_step)
         self.Ad_step = expM_step[:n_states, :n_states]
         self.Bd1_step = expM_step[:n_states, n_states:]
+
+        def model(t, vX, Force):
+            vU = Force
+            vX = vX.reshape(len(self.B), 1)
+            dx = self.A.dot(vX) + self.B.dot(vU)
+            return dx
+
+        self.ssmodel = model
+
+    # def __init__(self, mass, damping_ratio, stiffness, R, L, kf, fs_pos, fs_current):
+    #     self.mass = mass
+    #     self.damping_ratio = damping_ratio
+    #     self.stiffness = stiffness
+    #     self.R = R
+    #     self.L = L
+    #     self.kf = kf
+    #     self.A = np.mat(
+    #         [[0, 1], [-self.stiffness / self.mass, -self.damping_ratio / self.mass]]
+    #     )
+    #     self.B = np.mat([[0], [1 / self.mass]])
+    #     self.C = np.mat([1, 0])
+    #     self.D = np.mat([0])
+    #
+    #     def model(t, vX, Force):
+    #         vU = Force
+    #         vX = vX.reshape(len(self.B), 1)
+    #         dx = self.A.dot(vX) + self.B.dot(vU)
+    #         return dx
+    #
+    #     self.ssmodel = model
+    #     self.Xstates = np.zeros((self.A.shape[1], 1))
+    #     self.T = 1 / fs_current
+    #
+    #
+    # def run(self, t1, force):
+    #     r = integrate.ode(self.ssmodel).set_integrator("dopri5")
+    #     r.set_initial_value(self.Xstates, t1).set_f_params(force)
+    #     r.integrate(r.t + self.T)
+    #     self.Xstates = r.y
+    #     self.pos = self.C.dot(self.Xstates)
+    #     return self.pos
 
     def response(self, u, method="zoh"):
         last_u = self.last_u
@@ -198,6 +237,14 @@ class StateSpaceModel(object):
                 + np.dot(self.Bd1_linear, u)
             )
             self.y_output = self.C.dot(x_state) + self.D.dot(u)
+        elif method == "ode":
+            r = integrate.ode(self.ssmodel).set_integrator("dopri5")
+            r.set_initial_value(self.x_state, 0).set_f_params(self.last_u)
+            r.integrate(r.t + self.dt)
+            x_state = r.y
+            self.y_output = self.C.dot(x_state)
+            # return self.y_output, self.x_state
+
         self.last_u = u
         self.x_state = x_state
         return self.y_output, x_state

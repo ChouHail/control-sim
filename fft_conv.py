@@ -1,10 +1,13 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import scipy.signal
 from scipy.fftpack import fft, ifft, fftshift, fftfreq
 import time
+import numpy
 
-a = np.random.random(200000)
-b = np.random.random(200000)
+scipy.signal.tf2sos()
+a = np.random.random(3)
+b = np.random.random(3)
 T1 = time.time()
 c = np.correlate(a, b, "full")
 T2 = time.time()

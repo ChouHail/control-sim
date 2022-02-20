@@ -8,11 +8,11 @@ m = 1
 k = 0
 b = 0
 
-# A = np.array([[0, 1], [-k / m, -b / m]])
-# B = np.array([[0], [1 / m]])
-# C = np.array([1, 0])
-# D = np.array([0])
-# rigid_plant_num, rigid_plant_den = ss2tf(A, B, C, D)
+A = np.array([[0, 1], [-k / m, -b / m]])
+B = np.array([[0], [1 / m]])
+C = np.array([1, 0])
+D = np.array([0])
+rigid_plant_num, rigid_plant_den = ss2tf(A, B, C, D)
 #
 res_freq = 200
 anti_res_freq = 150
@@ -28,12 +28,12 @@ res_num = (
 )
 res_den = np.array([1, 2 * beta2 * res_omega, res_omega ** 2, 0, 0])
 
-# num = np.convolve(res_num, rigid_plant_num.flatten())
-# den = np.convolve(res_den, rigid_plant_den.flatten())
+num = np.convolve(res_num, rigid_plant_num.flatten())
+den = np.convolve(res_den, rigid_plant_den.flatten())
 
-num = res_num
-den = res_den
-A, B, C, D = tf2ss(num, den)
+# num = res_num
+# den = res_den
+A, B, C, D = tf2ss(res_num, res_den)
 ss = StateSpaceModel(A, B, C, D, DT)
 
 """Chirp参数"""
@@ -57,7 +57,7 @@ u = np.sin(2 * np.pi * ((end_freq_ - start_freq_) / T * t ** 2 / 2 + start_freq_
 y = np.zeros_like(u)
 for i in range(len(u)):
     input_sig = u[i]
-    y_output, x_state = ss.response(input_sig, method="zoh2")
+    y_output, x_state = ss.response(input_sig, method="zoh")
     y[i] = y_output
 p = y
 y = np.diff(y, 2) / DT / DT
@@ -95,7 +95,7 @@ linear_decay = (
     * (1 - np.e ** (-1j * 2 * pi * f_u * DT)) ** 2
     / (1j * 2 * pi * f_u * DT) ** 2
 )
-fw = fw / dd_decay / zoh_decay
+fw = fw / zoh_decay / zoh_decay  # / zoh_decay
 plt.figure()
 plt.plot(t, u, label="u")
 plt.legend()
@@ -112,22 +112,22 @@ plt.subplot(122)
 plt.xscale("log")
 plt.plot(f_u, np.angle(fw, deg=True))
 # dd_decay
-plt.figure(figsize=(14, 4))
-plt.subplot(121)
-plt.xscale("log")
-plt.plot(f_u, 20 * np.log10(np.abs(dd_decay)))
-
-plt.subplot(122)
-plt.xscale("log")
-plt.plot(f_u, np.angle(dd_decay, deg=True))
-
-# dd_decay
-plt.figure(figsize=(14, 4))
-plt.subplot(121)
-plt.xscale("log")
-plt.plot(f_u, 20 * np.log10(np.abs(zoh_decay)))
-
-plt.subplot(122)
-plt.xscale("log")
-plt.plot(f_u, np.angle(zoh_decay, deg=True))
+# plt.figure(figsize=(14, 4))
+# plt.subplot(121)
+# plt.xscale("log")
+# plt.plot(f_u, 20 * np.log10(np.abs(dd_decay)))
+#
+# plt.subplot(122)
+# plt.xscale("log")
+# plt.plot(f_u, np.angle(dd_decay, deg=True))
+#
+# # dd_decay
+# plt.figure(figsize=(14, 4))
+# plt.subplot(121)
+# plt.xscale("log")
+# plt.plot(f_u, 20 * np.log10(np.abs(zoh_decay)))
+#
+# plt.subplot(122)
+# plt.xscale("log")
+# plt.plot(f_u, np.angle(zoh_decay, deg=True))
 plt.show()

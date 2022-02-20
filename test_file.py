@@ -74,8 +74,8 @@ for i in range(len(u)):
     input_sig = u[i]
     y_output, x_state = sys_ss.response(input_sig, method="zoh2")
     y[i] = y_output
-# y = np.diff(y, 2) / DT / DT
-# y = np.pad(y, (2, 0), "constant", constant_values=(0, 0))
+y = np.diff(y, 2) / DT / DT
+y = np.pad(y, (2, 0), "constant", constant_values=(0, 0))
 
 
 u_detrend = u - np.mean(u)
